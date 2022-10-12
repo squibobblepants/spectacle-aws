@@ -76,7 +76,49 @@ module.exports = function(options, specData) {
 
   var replaceRefs = require("./resolve-references").replaceRefs;
   replaceRefs(path.dirname(copy["x-spec-path"]), copy, copy, "")
-
+  
+  /* Drop the OPTIONS definitions because I really don't care about them for this documentation */
+  for (let path in copy.paths) {
+    delete copy.paths[path].options;
+    delete copy.paths[path].Potato;
+  }
+  
+  /* Now we go through the special aws way of documenting, so that we can 
+    insert description tags where they are meant to be. Because annoying AWS
+  */
+  for (let documentation_item of copy["x-amazon-apigateway-documentation"].documentationParts) {
+    let target_item = documentation_item.location.name;
+    let description = documentation_item.properties.description;
+    
+    switch (documentation_item.location.type) {
+      case "API":
+        // Insert the API description into the appropriate place
+        copy.info.description = description;
+        break;
+      case "MODEL":
+        let model = copy.definitions[target_item];
+        if (model && description) {
+            model.description = description;
+        }
+        break;
+      case "RESPONSE":
+        let response_path = copy.paths[documentation_item.location.path];
+        if (!response_path) {
+            break;
+        }
+        console.log(response_path);
+        let response_method = response_path[documentation_item.location.method.toLowerCase()];
+        if (!response_method) {
+            break;
+        }
+        let response_status = response_method.responses[documentation_item.location.statusCode];
+        console.log(response_status);
+        console.log(description);
+        if (response_status && description) {
+            response_status.description = description;
+        }
+    }
+  }
   return copy;
 }
 
