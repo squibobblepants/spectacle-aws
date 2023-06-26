@@ -27,6 +27,10 @@ module.exports = function(options, specData) {
   // The "body"-parameter in each operation is stored in a
   // separate field "_request_body".
   if (copy.paths) {
+    // Delete the /sentry path
+    delete copy.paths["/sentry"];
+    console.log(copy.paths);
+
     Object.keys(copy.paths).forEach(function(pathName) {
       var path = copy.paths[pathName]
       var pathParameters = path.parameters || []
@@ -80,8 +84,11 @@ module.exports = function(options, specData) {
   /* Drop the OPTIONS definitions because I really don't care about them for this documentation */
   for (let path in copy.paths) {
     delete copy.paths[path].options;
-    delete copy.paths[path].Potato;
   }
+  // Delete the Empty object as it's not necessary
+  delete copy.definitions.Empty;
+  // Delete the SNSMessage object as we don't want to publicise it
+  delete copy.definitions.SNSMessage;
   
   /* Now we go through the special aws way of documenting, so that we can 
     insert description tags where they are meant to be. Because annoying AWS
@@ -106,14 +113,11 @@ module.exports = function(options, specData) {
         if (!response_path) {
             break;
         }
-        console.log(response_path);
         let response_method = response_path[documentation_item.location.method.toLowerCase()];
         if (!response_method) {
             break;
         }
         let response_status = response_method.responses[documentation_item.location.statusCode];
-        console.log(response_status);
-        console.log(description);
         if (response_status && description) {
             response_status.description = description;
         }
